@@ -4,5 +4,5 @@ namespace Omnipay\KuveytTurk\Constants;
 
 class TransactionType
 {
-	public const SALE = 'Sale';
+    public const SALE = 'Sale';
 }

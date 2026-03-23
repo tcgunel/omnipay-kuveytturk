@@ -15,97 +15,97 @@ use Omnipay\KuveytTurk\Helpers\Helper;
  */
 class PurchaseResponse extends AbstractResponse implements RedirectResponseInterface
 {
-	protected bool $is3D;
+    protected bool $is3D;
 
-	protected ?object $parsedResponse = null;
+    protected ?object $parsedResponse = null;
 
-	/**
-	 * @param RequestInterface $request
-	 * @param mixed $data - array for 3D (redirect data), string for non-3D (XML response)
-	 * @param bool $is3D
-	 */
-	public function __construct(RequestInterface $request, $data, bool $is3D = true)
-	{
-		parent::__construct($request, $data);
+    /**
+     * @param RequestInterface $request
+     * @param mixed $data - array for 3D (redirect data), string for non-3D (XML response)
+     * @param bool $is3D
+     */
+    public function __construct(RequestInterface $request, $data, bool $is3D = true)
+    {
+        parent::__construct($request, $data);
 
-		$this->is3D = $is3D;
+        $this->is3D = $is3D;
 
-		if (!$is3D && is_string($data)) {
-			$this->parsedResponse = Helper::xmlStringToObject($data);
-		}
-	}
+        if (!$is3D && is_string($data)) {
+            $this->parsedResponse = Helper::xmlStringToObject($data);
+        }
+    }
 
-	public function isSuccessful(): bool
-	{
-		if ($this->is3D) {
-			return false;
-		}
+    public function isSuccessful(): bool
+    {
+        if ($this->is3D) {
+            return false;
+        }
 
-		return isset($this->parsedResponse->ResponseCode)
-			&& $this->parsedResponse->ResponseCode === '00';
-	}
+        return isset($this->parsedResponse->ResponseCode)
+            && $this->parsedResponse->ResponseCode === '00';
+    }
 
-	public function isRedirect(): bool
-	{
-		return $this->is3D;
-	}
+    public function isRedirect(): bool
+    {
+        return $this->is3D;
+    }
 
-	public function getRedirectUrl()
-	{
-		if (!$this->is3D) {
-			return null;
-		}
+    public function getRedirectUrl()
+    {
+        if (!$this->is3D) {
+            return null;
+        }
 
-		/** @var PurchaseRequest $request */
-		$request = $this->getRequest();
+        /** @var PurchaseRequest $request */
+        $request = $this->getRequest();
 
-		return $request->getEndpoint();
-	}
+        return $request->getEndpoint();
+    }
 
-	public function getRedirectMethod(): string
-	{
-		return 'POST';
-	}
+    public function getRedirectMethod(): string
+    {
+        return 'POST';
+    }
 
-	public function getRedirectData(): array
-	{
-		if (!$this->is3D) {
-			return [];
-		}
+    public function getRedirectData(): array
+    {
+        if (!$this->is3D) {
+            return [];
+        }
 
-		return (array)$this->getData();
-	}
+        return (array) $this->getData();
+    }
 
-	public function getMessage(): ?string
-	{
-		if ($this->is3D) {
-			return null;
-		}
+    public function getMessage(): ?string
+    {
+        if ($this->is3D) {
+            return null;
+        }
 
-		return $this->parsedResponse->ResponseMessage ?? null;
-	}
+        return $this->parsedResponse->ResponseMessage ?? null;
+    }
 
-	public function getCode(): ?string
-	{
-		if ($this->is3D) {
-			return null;
-		}
+    public function getCode(): ?string
+    {
+        if ($this->is3D) {
+            return null;
+        }
 
-		return $this->parsedResponse->ResponseCode ?? null;
-	}
+        return $this->parsedResponse->ResponseCode ?? null;
+    }
 
-	public function getParsedResponse(): ?object
-	{
-		return $this->parsedResponse;
-	}
+    public function getParsedResponse(): ?object
+    {
+        return $this->parsedResponse;
+    }
 
-	public function getRedirectResponse()
-	{
-		$response = parent::getRedirectResponse();
+    public function getRedirectResponse()
+    {
+        $response = parent::getRedirectResponse();
 
-		$response->setContent(str_replace("<body", "<body style='color:#FFF'", $response->getContent()));
+        $response->setContent(str_replace('<body', "<body style='color:#FFF'", $response->getContent()));
 
-		$script = '<script>
+        $script = '<script>
 			document.forms[0].style.display = "none";
 	        document.getElementsByTagName("section")[0].style.display = "block";
 
@@ -116,16 +116,16 @@ class PurchaseResponse extends AbstractResponse implements RedirectResponseInter
 			}, 5000);
 		</script>';
 
-		$response->setContent(str_replace("</body>", $this->redirectSpinner() . "</body>", $response->getContent()));
+        $response->setContent(str_replace('</body>', $this->redirectSpinner() . '</body>', $response->getContent()));
 
-		$response->setContent(str_replace("</body>", "$script</body>", $response->getContent()));
+        $response->setContent(str_replace('</body>', "$script</body>", $response->getContent()));
 
-		return $response;
-	}
+        return $response;
+    }
 
-	protected function redirectSpinner(): string
-	{
-		$css = '<style>
+    protected function redirectSpinner(): string
+    {
+        $css = '<style>
 					section {
 					  width: 174px;
 					  margin: 0 auto;
@@ -173,7 +173,7 @@ class PurchaseResponse extends AbstractResponse implements RedirectResponseInter
 					}
 			</style>';
 
-		$html = '<section>
+        $html = '<section>
 		  <svg class="spinner" width="174px" height="174px" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
 		     <circle class="path" fill="transparent" stroke-width="2" cx="33" cy="33" r="30" stroke="url(#gradient)"/>
 		       <linearGradient id="gradient">
@@ -189,6 +189,6 @@ class PurchaseResponse extends AbstractResponse implements RedirectResponseInter
 		  </svg>
 		</section>';
 
-		return $css . $html;
-	}
+        return $css . $html;
+    }
 }
