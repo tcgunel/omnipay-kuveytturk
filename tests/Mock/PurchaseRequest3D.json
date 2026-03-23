@@ -1,0 +1,22 @@
+{
+  "merchantId": "496",
+  "customerId": "400235",
+  "userName": "apiuser",
+  "password": "Api123",
+  "installment": 0,
+  "secure": true,
+  "transactionId": "KT-ORDER-001",
+  "amount": 12.34,
+  "currency": "TRY",
+  "testMode": true,
+  "returnUrl": "https://example.com/success",
+  "cancelUrl": "https://example.com/failure",
+  "card": {
+    "firstName": "Example",
+    "lastName": "User",
+    "number": "4111111111111111",
+    "expiryMonth": "12",
+    "expiryYear": "2099",
+    "cvv": "000"
+  }
+}
