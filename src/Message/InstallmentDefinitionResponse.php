@@ -12,11 +12,13 @@ class InstallmentDefinitionResponse extends AbstractResponse
 
     public function __construct(RequestInterface $request, $data)
     {
-        parent::__construct($request, $data);
-
         if (is_string($data)) {
             $this->parsedResponse = Helper::jsonStringToObject($data);
         }
+
+        $normalized = $this->parsedResponse !== null ? (array) $this->parsedResponse : [];
+
+        parent::__construct($request, $normalized);
     }
 
     public function isSuccessful(): bool

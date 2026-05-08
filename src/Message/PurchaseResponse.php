@@ -32,27 +32,52 @@ class PurchaseResponse extends AbstractResponse implements RedirectResponseInter
 
     public function __construct(RequestInterface $request, $data, bool $is3D = true)
     {
-        parent::__construct($request, $data);
-
         $this->is3D = $is3D;
 
-        if (!is_string($data)) {
-            return;
+        if (is_string($data)) {
+            if ($is3D) {
+                $trimmed = ltrim($data);
+
+                if ($trimmed !== '' && $trimmed[0] === '{') {
+                    $this->jsonError = Helper::jsonStringToObject($data);
+                } else {
+                    $this->rawHtml = $data;
+                }
+            } else {
+                $this->parsedXml = Helper::xmlStringToObject($data);
+            }
         }
 
-        if ($is3D) {
-            $trimmed = ltrim($data);
+        // Pass an array to the parent so that AbstractResponse::getData() returns array-shaped data.
+        // Some consumers (e.g. logging layers that expect to walk a structure) break on raw strings.
+        parent::__construct($request, $this->normalizeData($data));
+    }
 
-            if ($trimmed !== '' && $trimmed[0] === '{') {
-                $this->jsonError = Helper::jsonStringToObject($data);
-            } else {
-                $this->rawHtml = $data;
+    /**
+     * Build the array shape that getData() exposes.
+     *
+     * @param  mixed  $raw
+     * @return array<string, mixed>
+     */
+    protected function normalizeData($raw): array
+    {
+        if ($this->is3D) {
+            if ($this->jsonError !== null) {
+                return (array) $this->jsonError;
             }
 
-            return;
+            if ($this->rawHtml !== null) {
+                return ['html' => $this->rawHtml];
+            }
+
+            return [];
         }
 
-        $this->parsedXml = Helper::xmlStringToObject($data);
+        if ($this->parsedXml !== null) {
+            return (array) $this->parsedXml;
+        }
+
+        return [];
     }
 
     public function isSuccessful(): bool

@@ -4,6 +4,12 @@ All notable changes to `tcgunel/omnipay-kuveytturk` are documented here.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [3.0.2] — 2026-05-08
+
+### Fixed
+
+- All response classes now expose array-shaped data via `getData()`. Previously `PurchaseResponse` and friends passed raw response strings (XML / HTML / JSON) to `AbstractResponse`'s constructor, which made `getData()` return a string. Some downstream logging layers walk this structure and break on strings (e.g. `foreach` over a string in PHP 8 throws `TypeError`), causing the post-redirect log row to never be persisted. Parsed objects are now cast to arrays, and raw HTML is wrapped as `['html' => …]`. No public method signatures change.
+
 ## [3.0.1] — 2026-05-08
 
 ### Fixed

@@ -15,11 +15,14 @@ class CompletePurchaseResponse extends AbstractResponse
 
     public function __construct(RequestInterface $request, $data)
     {
-        parent::__construct($request, $data);
-
         if (is_string($data)) {
             $this->parsedResponse = Helper::jsonStringToObject($data);
         }
+
+        // Pass an array to the parent so getData() always returns array-shaped data.
+        $normalized = $this->parsedResponse !== null ? (array) $this->parsedResponse : [];
+
+        parent::__construct($request, $normalized);
     }
 
     public function isSuccessful(): bool
