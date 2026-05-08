@@ -1,5 +1,11 @@
 # Omnipay: KuveytTurk
 
+[![Tests](https://github.com/tcgunel/omnipay-kuveytturk/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/tcgunel/omnipay-kuveytturk/actions/workflows/tests.yml)
+[![Latest Stable Version](https://img.shields.io/packagist/v/tcgunel/omnipay-kuveytturk.svg?label=stable)](https://packagist.org/packages/tcgunel/omnipay-kuveytturk)
+[![Total Downloads](https://img.shields.io/packagist/dt/tcgunel/omnipay-kuveytturk.svg)](https://packagist.org/packages/tcgunel/omnipay-kuveytturk)
+[![PHP Version](https://img.shields.io/packagist/php-v/tcgunel/omnipay-kuveytturk.svg)](https://packagist.org/packages/tcgunel/omnipay-kuveytturk)
+[![License](https://img.shields.io/packagist/l/tcgunel/omnipay-kuveytturk.svg)](LICENSE)
+
 **KuveytTurk sanal pos gateway for the Omnipay PHP payment processing library.**
 
 [Omnipay](https://github.com/thephpleague/omnipay) is a framework agnostic, multi-gateway payment
