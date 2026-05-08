@@ -153,6 +153,39 @@ class PurchaseTest extends TestCase
         $this->assertSame('KT-ORDER-001', $body['merchantOrderId']);
     }
 
+    public function test_3d_redirect_response_injects_target_top_into_forms_to_escape_iframes()
+    {
+        $options = json_decode(
+            file_get_contents(__DIR__ . '/../Mock/PurchaseRequest3D.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
+
+        $this->setMockHttpResponse('PurchaseResponse3DHtml.txt');
+
+        /** @var PurchaseResponse $response */
+        $response = $this->gateway->purchase($options)->send();
+
+        $content = $response->getRedirectResponse()->getContent();
+
+        $this->assertStringContainsString('<form target="_top"', $content);
+        $this->assertStringNotContainsString('<form action=', $content);
+    }
+
+    public function test_3d_redirect_response_leaves_existing_target_alone()
+    {
+        $request = new \Omnipay\KuveytTurk\Message\PurchaseRequest($this->getHttpClient(), $this->getHttpRequest());
+
+        $crafted = '<html><body><form target="_self" action="/x"></form></body></html>';
+        $purchaseResponse = new PurchaseResponse($request, $crafted, true);
+
+        $content = $purchaseResponse->getRedirectResponse()->getContent();
+
+        $this->assertStringContainsString('target="_self"', $content);
+        $this->assertStringNotContainsString('target="_top"', $content);
+    }
+
     public function test_3d_purchase_handles_json_error_response()
     {
         $options = json_decode(

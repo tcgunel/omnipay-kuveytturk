@@ -4,6 +4,12 @@ All notable changes to `tcgunel/omnipay-kuveytturk` are documented here.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [3.0.3] — 2026-05-08
+
+### Fixed
+
+- `PurchaseResponse::getRedirectResponse()` now injects `target="_top"` into every `<form>` in the bank's HTML auto-submit form (forms that already have a target attribute are left alone). KuveytTurk's 3D Secure pages and BKM's TROY redirect target send `X-Frame-Options: DENY`, so consumers that render the returned HTML inside an iframe used to fail with "bağlanmayı reddetti" the moment the bank tried to load its 3DS challenge page. The injected `target="_top"` makes the auto-submit break out of any embedding iframe.
+
 ## [3.0.2] — 2026-05-08
 
 ### Fixed

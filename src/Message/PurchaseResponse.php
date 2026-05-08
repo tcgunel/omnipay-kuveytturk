@@ -141,7 +141,13 @@ class PurchaseResponse extends AbstractResponse implements RedirectResponseInter
     }
 
     /**
-     * Return the bank's HTML auto-submit form as-is so the consumer can stream it to the browser.
+     * Return the bank's HTML auto-submit form so the consumer can stream it to the browser.
+     *
+     * KuveytTurk's 3D Secure pages (and BKM's TROY redirect target) set X-Frame-Options: DENY,
+     * which means any consumer that renders the returned HTML inside an iframe will hit
+     * "bağlanmayı reddetti" once the bank tries to load its 3DS challenge page. Inject
+     * target="_top" into every <form> tag (that doesn't already specify one) so the auto-submit
+     * navigates the top-level window and breaks out of the iframe.
      */
     public function getRedirectResponse()
     {
@@ -149,6 +155,21 @@ class PurchaseResponse extends AbstractResponse implements RedirectResponseInter
             return new HttpFoundationResponse('');
         }
 
-        return new HttpFoundationResponse($this->rawHtml ?? '');
+        return new HttpFoundationResponse($this->breakOutOfFrames($this->rawHtml ?? ''));
+    }
+
+    protected function breakOutOfFrames(string $html): string
+    {
+        if ($html === '') {
+            return $html;
+        }
+
+        $patched = preg_replace(
+            '/<form\b(?![^>]*\btarget=)/i',
+            '<form target="_top"',
+            $html,
+        );
+
+        return is_string($patched) ? $patched : $html;
     }
 }
