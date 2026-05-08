@@ -1,32 +1,5 @@
 HTTP/1.1 200 OK
 Server: Microsoft-IIS/10.0
-Content-Type: application/xml; charset=UTF-8
-Content-Length: 550
+Content-Type: application/json; charset=UTF-8
 
-<?xml version="1.0" encoding="UTF-8"?>
-<VPosTransactionResponseContract>
-    <VPosMessage>
-        <OrderId>22654838</OrderId>
-        <OkUrl>https://example.com/success</OkUrl>
-        <FailUrl>https://example.com/failure</FailUrl>
-        <MerchantId>496</MerchantId>
-        <SubMerchantId>0</SubMerchantId>
-        <CustomerId>400235</CustomerId>
-        <HashPassword></HashPassword>
-        <CardNumber>411111******1111</CardNumber>
-        <BatchID>1843</BatchID>
-        <InstallmentCount>0</InstallmentCount>
-        <Amount>1234</Amount>
-        <MerchantOrderId>KT-ORDER-001</MerchantOrderId>
-        <TransactionSecurity>3</TransactionSecurity>
-    </VPosMessage>
-    <IsEnrolled>true</IsEnrolled>
-    <IsVirtual>false</IsVirtual>
-    <ResponseCode>00</ResponseCode>
-    <ResponseMessage>Onaylandi</ResponseMessage>
-    <OrderId>22654838</OrderId>
-    <TransactionTime>0001-01-01T00:00:00</TransactionTime>
-    <MerchantOrderId>KT-ORDER-001</MerchantOrderId>
-    <ReferenceId>335709614893</ReferenceId>
-    <BusinessKey>0</BusinessKey>
-</VPosTransactionResponseContract>
+{"Success":true,"ResponseCode":"00","ResponseMessage":"Onaylandi","OrderId":22654838,"MerchantOrderId":"KT-ORDER-001","ReferenceId":"335709614893","BusinessKey":0,"TransactionTime":"0001-01-01T00:00:00"}

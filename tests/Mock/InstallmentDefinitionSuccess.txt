@@ -1,0 +1,5 @@
+HTTP/1.1 200 OK
+Server: Microsoft-IIS/10.0
+Content-Type: application/json; charset=UTF-8
+
+{"success":true,"value":[{"installment":1,"rate":0.0},{"installment":2,"rate":0.5},{"installment":3,"rate":1.0},{"installment":6,"rate":2.5},{"installment":9,"rate":4.0}],"message":null}

@@ -4,6 +4,8 @@ namespace Omnipay\KuveytTurk;
 
 use Omnipay\Common\AbstractGateway;
 use Omnipay\KuveytTurk\Message\CompletePurchaseRequest;
+use Omnipay\KuveytTurk\Message\InstallmentDefinitionRequest;
+use Omnipay\KuveytTurk\Message\IsOnusCardRequest;
 use Omnipay\KuveytTurk\Message\PurchaseRequest;
 use Omnipay\KuveytTurk\Traits\PurchaseGettersSetters;
 
@@ -45,5 +47,15 @@ class Gateway extends AbstractGateway
     public function completePurchase(array $options = [])
     {
         return $this->createRequest(CompletePurchaseRequest::class, $options);
+    }
+
+    public function isOnusCard(array $options = [])
+    {
+        return $this->createRequest(IsOnusCardRequest::class, $options);
+    }
+
+    public function installmentDefinition(array $options = [])
+    {
+        return $this->createRequest(InstallmentDefinitionRequest::class, $options);
     }
 }

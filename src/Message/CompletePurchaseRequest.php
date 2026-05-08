@@ -7,39 +7,22 @@ use Omnipay\Common\Message\AbstractRequest;
 use Omnipay\KuveytTurk\Helpers\Helper;
 use Omnipay\KuveytTurk\Traits\PurchaseGettersSetters;
 
+/**
+ * After the customer completes 3DS, the bank POSTs to the merchant's successUrl/failUrl with:
+ *   - Result_MD            -> set as `md`
+ *   - Result_OrderId       -> set as `orderId`
+ *   - Result_MerchantOrderId -> set as `transactionId`
+ *   - ResponseMessage      -> failure reason on the failUrl path
+ *
+ * Pass these alongside the original amount (Omnipay decimal) to capture the funds via /KTPay/Provision.
+ */
 class CompletePurchaseRequest extends AbstractRequest
 {
     use PurchaseGettersSetters;
 
-    protected $test_endpoint = 'https://boatest.kuveytturk.com.tr/boa.virtualpos.services/Home/ThreeDModelProvisionGate';
+    protected $test_endpoint = 'https://boatest.kuveytturk.com.tr/boa.virtualpos.services/KTPay/Provision';
 
-    protected $prod_endpoint = 'https://sanalpos.kuveytturk.com.tr/ServiceGateWay/Home/ThreeDModelProvisionGate';
-
-    /**
-     * Get the AuthenticationResponse from the 3D callback.
-     */
-    public function getAuthenticationResponse()
-    {
-        return $this->getParameter('authenticationResponse');
-    }
-
-    public function setAuthenticationResponse($value)
-    {
-        return $this->setParameter('authenticationResponse', $value);
-    }
-
-    /**
-     * Get the MD (Message Digest) from the 3D callback.
-     */
-    public function getMd()
-    {
-        return $this->getParameter('md');
-    }
-
-    public function setMd($value)
-    {
-        return $this->setParameter('md', $value);
-    }
+    protected $prod_endpoint = 'https://sanalpos.kuveytturk.com.tr/ServiceGateWay/KTPay/Provision';
 
     /**
      * @throws InvalidRequestException
@@ -51,93 +34,56 @@ class CompletePurchaseRequest extends AbstractRequest
             'customerId',
             'userName',
             'password',
-            'authenticationResponse',
+            'transactionId',
+            'amount',
+            'md',
+            'orderId',
         );
 
-        $authResponse = $this->getAuthenticationResponse();
-
-        // Decode the authentication response (it comes base64 encoded or URL encoded from the bank)
-        $decodedResponse = base64_decode($authResponse);
-
-        if ($decodedResponse === false || empty($decodedResponse)) {
-            $decodedResponse = $authResponse;
-        }
-
-        $parsedAuth = Helper::xmlStringToObject($decodedResponse);
-
-        // Check if 3D authentication was successful
-        if (!isset($parsedAuth->ResponseCode) || $parsedAuth->ResponseCode !== '00') {
-            return [
-                '_authSuccess' => false,
-                '_authResponse' => $parsedAuth,
-                'ResponseCode' => $parsedAuth->ResponseCode ?? 'AuthFail',
-                'ResponseMessage' => $parsedAuth->ResponseMessage ?? '3D authentication failed',
-            ];
-        }
-
-        // Extract fields from the authentication response
-        $merchantOrderId = $parsedAuth->MerchantOrderId ?? $this->getTransactionId() ?? '';
-        $amount = $parsedAuth->VPosMessage->Amount ?? '0';
+        $merchantOrderId = (string) $this->getTransactionId();
+        $amount = Helper::formatAmount($this->getAmountInteger());
 
         $hash = Helper::hashNon3D(
-            $this->getMerchantId(),
-            (string) $merchantOrderId,
-            (string) $amount,
-            $this->getUserName(),
-            $this->getPassword(),
+            (string) $this->getMerchantId(),
+            $merchantOrderId,
+            $amount,
+            (string) $this->getUserName(),
+            (string) $this->getPassword(),
         );
 
-        $data = [
-            'APIVersion' => 'TDV2.0.0',
-            'MerchantId' => $this->getMerchantId(),
-            'CustomerId' => $this->getCustomerId(),
-            'UserName' => $this->getUserName(),
-            'TransactionType' => 'Sale',
-            'InstallmentCount' => (string) ($this->getInstallment() ?? 0),
-            'Amount' => (string) $amount,
-            'MerchantOrderId' => (string) $merchantOrderId,
-            'TransactionSecurity' => '3',
-            'KuveytTurkVPosAdditionalData' => [
-                'AdditionalData' => [
-                    'Key' => 'MD',
-                    'Data' => $this->getMd() ?? ($parsedAuth->MD ?? ''),
-                ],
-            ],
-            'HashData' => $hash,
-            '_authSuccess' => true,
-            '_authResponse' => $parsedAuth,
+        // IDs are sent as strings here to match the official KuveytTurk WordPress plugin exactly.
+        return [
+            'language' => 1,
+            'merchantId' => (string) $this->getMerchantId(),
+            'customerId' => (string) $this->getCustomerId(),
+            'username' => (string) $this->getUserName(),
+            'hashData' => $hash,
+            'amount' => $amount,
+            'orderId' => (string) $this->getOrderId(),
+            'merchantOrderId' => $merchantOrderId,
+            'successUrl' => (string) ($this->getReturnUrl() ?? ''),
+            'failUrl' => (string) ($this->getCancelUrl() ?? ''),
+            'md' => (string) $this->getMd(),
         ];
-
-        return $data;
     }
 
     public function sendData($data)
     {
-        // If 3D auth failed, return failure response without sending provision request
-        if (empty($data['_authSuccess'])) {
-            return $this->response = new CompletePurchaseResponse($this, $data, null);
-        }
-
-        // Remove internal keys before sending
-        $sendData = $data;
-        $authResponse = $sendData['_authResponse'] ?? null;
-        unset($sendData['_authSuccess'], $sendData['_authResponse']);
-
-        $xml = Helper::arrayToXml($sendData);
+        $body = json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         $httpResponse = $this->httpClient->request(
             'POST',
             $this->getEndpoint(),
             [
-                'Content-Type' => 'application/xml',
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
             ],
-            $xml
+            $body,
         );
 
         return $this->response = new CompletePurchaseResponse(
             $this,
             $httpResponse->getBody()->getContents(),
-            $authResponse
         );
     }
 

@@ -4,13 +4,13 @@ namespace Omnipay\KuveytTurk\Constants;
 
 class CurrencyCode
 {
-    public const TRY = '0949';
+    public const TRY = '949';
 
-    public const USD = '0840';
+    public const USD = '840';
 
-    public const EUR = '0978';
+    public const EUR = '978';
 
-    public const GBP = '0826';
+    public const GBP = '826';
 
     public static function fromAlpha(string $currency): string
     {

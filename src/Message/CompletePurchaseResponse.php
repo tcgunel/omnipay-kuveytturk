@@ -7,59 +7,34 @@ use Omnipay\Common\Message\RequestInterface;
 use Omnipay\KuveytTurk\Helpers\Helper;
 
 /**
- * KuveytTurk Complete Purchase Response
- *
- * Handles the provision response after 3D authentication.
+ * JSON response from /KTPay/Provision. Success when ResponseCode === "00".
  */
 class CompletePurchaseResponse extends AbstractResponse
 {
     protected ?object $parsedResponse = null;
 
-    protected ?object $authResponse = null;
-
-    /**
-     * @param RequestInterface $request
-     * @param mixed $data - array (auth failed) or string (XML provision response)
-     * @param object|null $authResponse - parsed 3D authentication response
-     */
-    public function __construct(RequestInterface $request, $data, ?object $authResponse = null)
+    public function __construct(RequestInterface $request, $data)
     {
         parent::__construct($request, $data);
 
-        $this->authResponse = $authResponse;
-
         if (is_string($data)) {
-            $this->parsedResponse = Helper::xmlStringToObject($data);
+            $this->parsedResponse = Helper::jsonStringToObject($data);
         }
     }
 
     public function isSuccessful(): bool
     {
-        // If data is an array, it means auth failed
-        if (is_array($this->data)) {
-            return false;
-        }
-
-        return $this->parsedResponse !== null
-            && isset($this->parsedResponse->ResponseCode)
+        return isset($this->parsedResponse->ResponseCode)
             && $this->parsedResponse->ResponseCode === '00';
     }
 
     public function getMessage(): ?string
     {
-        if (is_array($this->data)) {
-            return $this->data['ResponseMessage'] ?? '3D authentication failed';
-        }
-
         return $this->parsedResponse->ResponseMessage ?? null;
     }
 
     public function getCode(): ?string
     {
-        if (is_array($this->data)) {
-            return $this->data['ResponseCode'] ?? null;
-        }
-
         return $this->parsedResponse->ResponseCode ?? null;
     }
 
@@ -69,16 +44,13 @@ class CompletePurchaseResponse extends AbstractResponse
             return null;
         }
 
-        return $this->parsedResponse->MerchantOrderId ?? $this->parsedResponse->OrderId ?? null;
+        return isset($this->parsedResponse->MerchantOrderId)
+            ? (string) $this->parsedResponse->MerchantOrderId
+            : (isset($this->parsedResponse->OrderId) ? (string) $this->parsedResponse->OrderId : null);
     }
 
     public function getParsedResponse(): ?object
     {
         return $this->parsedResponse;
-    }
-
-    public function getAuthResponse(): ?object
-    {
-        return $this->authResponse;
     }
 }

@@ -3,6 +3,7 @@
 namespace Omnipay\KuveytTurk\Tests\Feature;
 
 use Omnipay\Common\Exception\InvalidRequestException;
+use Omnipay\KuveytTurk\Helpers\Helper;
 use Omnipay\KuveytTurk\Message\CompletePurchaseRequest;
 use Omnipay\KuveytTurk\Message\CompletePurchaseResponse;
 use Omnipay\KuveytTurk\Tests\TestCase;
@@ -13,16 +14,14 @@ class CompletePurchaseTest extends TestCase
      * @throws InvalidRequestException
      * @throws \JsonException
      */
-    public function test_complete_purchase_request_with_successful_auth()
+    public function test_complete_purchase_request_builds_provision_json()
     {
-        $options = file_get_contents(__DIR__ . '/../Mock/CompletePurchaseRequest.json');
-
-        $options = json_decode($options, true, 512, JSON_THROW_ON_ERROR);
-
-        $authXml = file_get_contents(__DIR__ . '/../Mock/CompletePurchaseAuthResponseSuccess.xml');
-
-        $options['authenticationResponse'] = base64_encode($authXml);
-        $options['md'] = '67YtBfBRTZ0XBKnAHi8c/A==';
+        $options = json_decode(
+            file_get_contents(__DIR__ . '/../Mock/CompletePurchaseRequest.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
 
         $request = new CompletePurchaseRequest($this->getHttpClient(), $this->getHttpRequest());
 
@@ -31,179 +30,85 @@ class CompletePurchaseTest extends TestCase
         $data = $request->getData();
 
         $this->assertIsArray($data);
+        $this->assertSame(1, $data['language']);
+        $this->assertSame('496', $data['merchantId']);
+        $this->assertSame('400235', $data['customerId']);
+        $this->assertSame('apiuser', $data['username']);
+        $this->assertSame('1234', $data['amount']);
+        $this->assertSame('22654838', $data['orderId']);
+        $this->assertSame('KT-ORDER-001', $data['merchantOrderId']);
+        $this->assertSame('67YtBfBRTZ0XBKnAHi8c/A==', $data['md']);
+        $this->assertSame('https://example.com/success', $data['successUrl']);
+        $this->assertSame('https://example.com/failure', $data['failUrl']);
 
-        // Auth should be successful
-        $this->assertTrue($data['_authSuccess']);
-
-        // Verify provision request data
-        $this->assertEquals('TDV2.0.0', $data['APIVersion']);
-        $this->assertEquals('496', $data['MerchantId']);
-        $this->assertEquals('400235', $data['CustomerId']);
-        $this->assertEquals('apiuser', $data['UserName']);
-        $this->assertEquals('Sale', $data['TransactionType']);
-        $this->assertEquals('0', $data['InstallmentCount']);
-        $this->assertEquals('1234', $data['Amount']);
-        $this->assertEquals('KT-ORDER-001', $data['MerchantOrderId']);
-        $this->assertEquals('3', $data['TransactionSecurity']);
-
-        // Verify MD data
-        $this->assertEquals('67YtBfBRTZ0XBKnAHi8c/A==', $data['KuveytTurkVPosAdditionalData']['AdditionalData']['Data']);
-        $this->assertEquals('MD', $data['KuveytTurkVPosAdditionalData']['AdditionalData']['Key']);
-
-        // Verify hash is present
-        $this->assertNotEmpty($data['HashData']);
+        $expectedHash = Helper::hashNon3D('496', 'KT-ORDER-001', '1234', 'apiuser', 'Api123');
+        $this->assertSame($expectedHash, $data['hashData']);
     }
 
-    /**
-     * @throws InvalidRequestException
-     * @throws \JsonException
-     */
-    public function test_complete_purchase_request_with_failed_auth()
+    public function test_complete_purchase_sends_provision_request_and_parses_success()
     {
-        $options = file_get_contents(__DIR__ . '/../Mock/CompletePurchaseRequest.json');
-
-        $options = json_decode($options, true, 512, JSON_THROW_ON_ERROR);
-
-        $authXml = file_get_contents(__DIR__ . '/../Mock/CompletePurchaseAuthResponseFail.xml');
-
-        $options['authenticationResponse'] = base64_encode($authXml);
-
-        $request = new CompletePurchaseRequest($this->getHttpClient(), $this->getHttpRequest());
-
-        $request->initialize($options);
-
-        $data = $request->getData();
-
-        $this->assertIsArray($data);
-
-        // Auth should be failed
-        $this->assertFalse($data['_authSuccess']);
-
-        $this->assertEquals('HashDataError', $data['ResponseCode']);
-        $this->assertEquals('Guvenlik Hatasi - Loss Cevap', $data['ResponseMessage']);
-    }
-
-    public function test_complete_purchase_response_provision_success()
-    {
-        $httpResponse = $this->getMockHttpResponse('CompletePurchaseProvisionSuccess.txt');
-
-        $response = new CompletePurchaseResponse(
-            $this->getMockRequest(),
-            $httpResponse->getBody()->getContents(),
-            null
+        $options = json_decode(
+            file_get_contents(__DIR__ . '/../Mock/CompletePurchaseRequest.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
         );
-
-        $this->assertTrue($response->isSuccessful());
-
-        $this->assertEquals('00', $response->getCode());
-
-        $this->assertEquals('Onaylandi', $response->getMessage());
-
-        $this->assertEquals('KT-ORDER-001', $response->getTransactionReference());
-    }
-
-    public function test_complete_purchase_response_provision_error()
-    {
-        $httpResponse = $this->getMockHttpResponse('CompletePurchaseProvisionError.txt');
-
-        $response = new CompletePurchaseResponse(
-            $this->getMockRequest(),
-            $httpResponse->getBody()->getContents(),
-            null
-        );
-
-        $this->assertFalse($response->isSuccessful());
-
-        $this->assertEquals('EmptyMDException', $response->getCode());
-
-        $this->assertEquals('MD degeri bos', $response->getMessage());
-    }
-
-    public function test_complete_purchase_response_auth_failed()
-    {
-        $failedData = [
-            '_authSuccess' => false,
-            'ResponseCode' => 'HashDataError',
-            'ResponseMessage' => 'Guvenlik Hatasi - Loss Cevap',
-        ];
-
-        $response = new CompletePurchaseResponse(
-            $this->getMockRequest(),
-            $failedData,
-            null
-        );
-
-        $this->assertFalse($response->isSuccessful());
-
-        $this->assertEquals('HashDataError', $response->getCode());
-
-        $this->assertEquals('Guvenlik Hatasi - Loss Cevap', $response->getMessage());
-    }
-
-    public function test_complete_purchase_sends_provision_request_on_success()
-    {
-        $options = file_get_contents(__DIR__ . '/../Mock/CompletePurchaseRequest.json');
-
-        $options = json_decode($options, true, 512, JSON_THROW_ON_ERROR);
-
-        $authXml = file_get_contents(__DIR__ . '/../Mock/CompletePurchaseAuthResponseSuccess.xml');
-
-        $options['authenticationResponse'] = base64_encode($authXml);
-        $options['md'] = '67YtBfBRTZ0XBKnAHi8c/A==';
 
         $this->setMockHttpResponse('CompletePurchaseProvisionSuccess.txt');
 
+        /** @var CompletePurchaseResponse $response */
         $response = $this->gateway->completePurchase($options)->send();
 
+        $this->assertInstanceOf(CompletePurchaseResponse::class, $response);
         $this->assertTrue($response->isSuccessful());
+        $this->assertSame('00', $response->getCode());
+        $this->assertSame('Onaylandi', $response->getMessage());
+        $this->assertSame('KT-ORDER-001', $response->getTransactionReference());
 
-        // Verify the HTTP request was sent to provision endpoint
         $requests = $this->getMockedRequests();
         $this->assertCount(1, $requests);
 
         $httpRequest = $requests[0];
-        $this->assertEquals('POST', $httpRequest->getMethod());
+        $this->assertSame('POST', $httpRequest->getMethod());
         $this->assertStringContainsString(
-            'boatest.kuveytturk.com.tr/boa.virtualpos.services/Home/ThreeDModelProvisionGate',
-            (string) $httpRequest->getUri()
+            'boatest.kuveytturk.com.tr/boa.virtualpos.services/KTPay/Provision',
+            (string) $httpRequest->getUri(),
         );
+        $this->assertStringContainsString('application/json', $httpRequest->getHeaderLine('Content-Type'));
 
-        // Verify the body is XML
-        $body = (string) $httpRequest->getBody();
-        $this->assertStringContainsString('KuveytTurkVPosMessage', $body);
-        $this->assertStringContainsString('<MerchantId>496</MerchantId>', $body);
-        $this->assertStringContainsString('67YtBfBRTZ0XBKnAHi8c/A==', $body);
+        $body = json_decode((string) $httpRequest->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('496', $body['merchantId']);
+        $this->assertSame('67YtBfBRTZ0XBKnAHi8c/A==', $body['md']);
+        $this->assertSame('22654838', $body['orderId']);
     }
 
-    public function test_complete_purchase_does_not_send_provision_on_auth_failure()
+    public function test_complete_purchase_parses_error_response()
     {
-        $options = file_get_contents(__DIR__ . '/../Mock/CompletePurchaseRequest.json');
+        $options = json_decode(
+            file_get_contents(__DIR__ . '/../Mock/CompletePurchaseRequest.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
 
-        $options = json_decode($options, true, 512, JSON_THROW_ON_ERROR);
-
-        $authXml = file_get_contents(__DIR__ . '/../Mock/CompletePurchaseAuthResponseFail.xml');
-
-        $options['authenticationResponse'] = base64_encode($authXml);
+        $this->setMockHttpResponse('CompletePurchaseProvisionError.txt');
 
         $response = $this->gateway->completePurchase($options)->send();
 
         $this->assertFalse($response->isSuccessful());
-
-        // No HTTP request should be sent
-        $requests = $this->getMockedRequests();
-        $this->assertCount(0, $requests);
+        $this->assertSame('EmptyMDException', $response->getCode());
+        $this->assertSame('MD degeri bos', $response->getMessage());
     }
 
-    public function test_complete_purchase_prod_endpoint()
+    public function test_complete_purchase_uses_prod_endpoint_when_test_mode_false()
     {
-        $options = file_get_contents(__DIR__ . '/../Mock/CompletePurchaseRequest.json');
+        $options = json_decode(
+            file_get_contents(__DIR__ . '/../Mock/CompletePurchaseRequest.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
 
-        $options = json_decode($options, true, 512, JSON_THROW_ON_ERROR);
-
-        $authXml = file_get_contents(__DIR__ . '/../Mock/CompletePurchaseAuthResponseSuccess.xml');
-
-        $options['authenticationResponse'] = base64_encode($authXml);
-        $options['md'] = '67YtBfBRTZ0XBKnAHi8c/A==';
         $options['testMode'] = false;
 
         $this->setMockHttpResponse('CompletePurchaseProvisionSuccess.txt');
@@ -214,12 +119,12 @@ class CompletePurchaseTest extends TestCase
         $httpRequest = $requests[0];
 
         $this->assertStringContainsString(
-            'sanalpos.kuveytturk.com.tr/ServiceGateWay/Home/ThreeDModelProvisionGate',
-            (string) $httpRequest->getUri()
+            'sanalpos.kuveytturk.com.tr/ServiceGateWay/KTPay/Provision',
+            (string) $httpRequest->getUri(),
         );
     }
 
-    public function test_complete_purchase_gateway_method()
+    public function test_complete_purchase_gateway_method_returns_correct_request()
     {
         $request = $this->gateway->completePurchase([
             'merchantId' => '496',

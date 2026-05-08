@@ -9,43 +9,47 @@ class HelperTest extends TestCase
 {
     public function test_hash_sha1_base64()
     {
-        // SHA1 of "test" in binary, then base64 encoded
         $expected = base64_encode(sha1('test', true));
 
-        $this->assertEquals($expected, Helper::hashSha1Base64('test'));
+        $this->assertSame($expected, Helper::hashSha1Base64('test'));
     }
 
-    public function test_hash_sha1_base64_password()
+    public function test_hash_sha1_base64_password_is_20_byte_sha1()
     {
-        // Verify SHA1Base64 of a password
         $password = 'Api123';
         $result = Helper::hashSha1Base64($password);
 
         $this->assertNotEmpty($result);
         $this->assertIsString($result);
 
-        // Base64 decode should work
         $decoded = base64_decode($result, true);
         $this->assertNotFalse($decoded);
-
-        // SHA1 produces 20 bytes
-        $this->assertEquals(20, strlen($decoded));
+        $this->assertSame(20, strlen($decoded));
     }
 
-    public function test_hash_non3d()
+    public function test_hash_kt_pay_uses_hmac_sha512_with_sha1_password_as_key()
+    {
+        $hashValue = '496ORDER-0011234apiuser';
+        $password = 'Api123';
+
+        $hashPassword = base64_encode(sha1($password, true));
+        $expected = base64_encode(hash_hmac('sha512', $hashValue . $hashPassword, $hashPassword, true));
+
+        $this->assertSame($expected, Helper::hashKTPay($hashValue, $password));
+    }
+
+    public function test_hash_non3d_concatenates_fields_correctly()
     {
         $hash = Helper::hashNon3D('496', 'ORDER-001', '1234', 'apiuser', 'Api123');
 
         $this->assertNotEmpty($hash);
 
-        // Verify it matches manual calculation
-        $hashedPassword = Helper::hashSha1Base64('Api123');
-        $expectedHash = Helper::hashSha1Base64('496' . 'ORDER-001' . '1234' . 'apiuser' . $hashedPassword);
+        $expected = Helper::hashKTPay('496' . 'ORDER-001' . '1234' . 'apiuser', 'Api123');
 
-        $this->assertEquals($expectedHash, $hash);
+        $this->assertSame($expected, $hash);
     }
 
-    public function test_hash_3d()
+    public function test_hash_3d_concatenates_fields_correctly()
     {
         $hash = Helper::hash3D(
             '496',
@@ -54,18 +58,17 @@ class HelperTest extends TestCase
             'https://example.com/success',
             'https://example.com/failure',
             'apiuser',
-            'Api123'
+            'Api123',
         );
 
         $this->assertNotEmpty($hash);
 
-        // Verify it matches manual calculation
-        $hashedPassword = Helper::hashSha1Base64('Api123');
-        $expectedHash = Helper::hashSha1Base64(
-            '496' . 'ORDER-001' . '1234' . 'https://example.com/success' . 'https://example.com/failure' . 'apiuser' . $hashedPassword
+        $expected = Helper::hashKTPay(
+            '496' . 'ORDER-001' . '1234' . 'https://example.com/success' . 'https://example.com/failure' . 'apiuser',
+            'Api123',
         );
 
-        $this->assertEquals($expectedHash, $hash);
+        $this->assertSame($expected, $hash);
     }
 
     public function test_hash_3d_differs_from_non3d()
@@ -78,21 +81,21 @@ class HelperTest extends TestCase
             'https://example.com/success',
             'https://example.com/failure',
             'apiuser',
-            'Api123'
+            'Api123',
         );
 
-        $this->assertNotEquals($hashNon3D, $hash3D);
+        $this->assertNotSame($hashNon3D, $hash3D);
     }
 
     public function test_format_amount()
     {
-        $this->assertEquals('100', Helper::formatAmount(100));
-        $this->assertEquals('1234', Helper::formatAmount(1234));
-        $this->assertEquals('0', Helper::formatAmount(0));
-        $this->assertEquals('999999', Helper::formatAmount(999999));
+        $this->assertSame('100', Helper::formatAmount(100));
+        $this->assertSame('1234', Helper::formatAmount(1234));
+        $this->assertSame('0', Helper::formatAmount(0));
+        $this->assertSame('999999', Helper::formatAmount(999999));
     }
 
-    public function test_array_to_xml()
+    public function test_array_to_xml_renders_root_and_leaves()
     {
         $data = [
             'APIVersion' => 'TDV2.0.0',
@@ -125,7 +128,7 @@ class HelperTest extends TestCase
         $this->assertStringContainsString('<Data>somevalue</Data>', $xml);
     }
 
-    public function test_xml_string_to_object()
+    public function test_xml_string_to_object_round_trips_basic_xml()
     {
         $xml = '<?xml version="1.0" encoding="UTF-8"?>'
             . '<VPosTransactionResponseContract>'
@@ -137,8 +140,35 @@ class HelperTest extends TestCase
         $obj = Helper::xmlStringToObject($xml);
 
         $this->assertIsObject($obj);
-        $this->assertEquals('00', $obj->ResponseCode);
-        $this->assertEquals('Onaylandi', $obj->ResponseMessage);
-        $this->assertEquals('ORDER-001', $obj->MerchantOrderId);
+        $this->assertSame('00', $obj->ResponseCode);
+        $this->assertSame('Onaylandi', $obj->ResponseMessage);
+        $this->assertSame('ORDER-001', $obj->MerchantOrderId);
+    }
+
+    public function test_json_string_to_object()
+    {
+        $obj = Helper::jsonStringToObject('{"ResponseCode":"00","ResponseMessage":"Onaylandi"}');
+
+        $this->assertIsObject($obj);
+        $this->assertSame('00', $obj->ResponseCode);
+        $this->assertSame('Onaylandi', $obj->ResponseMessage);
+    }
+
+    public function test_json_string_to_object_returns_null_on_invalid_json()
+    {
+        $this->assertNull(Helper::jsonStringToObject('not json'));
+        $this->assertNull(Helper::jsonStringToObject('"just a string"'));
+        $this->assertNull(Helper::jsonStringToObject('[1,2,3]'));
+    }
+
+    public function test_tr_subscriber_strips_country_and_trunk_prefixes()
+    {
+        $this->assertSame('5551112233', Helper::trSubscriber('+905551112233'));
+        $this->assertSame('5551112233', Helper::trSubscriber('905551112233'));
+        $this->assertSame('5551112233', Helper::trSubscriber('05551112233'));
+        $this->assertSame('5551112233', Helper::trSubscriber('5551112233'));
+        $this->assertSame('5551112233', Helper::trSubscriber('+90 (555) 111 22 33'));
+        $this->assertSame('', Helper::trSubscriber(null));
+        $this->assertSame('', Helper::trSubscriber(''));
     }
 }

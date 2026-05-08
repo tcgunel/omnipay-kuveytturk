@@ -83,4 +83,24 @@ trait PurchaseGettersSetters
     {
         return $this->setParameter('orderId', $value);
     }
+
+    public function getMd()
+    {
+        return $this->getParameter('md');
+    }
+
+    public function setMd($value)
+    {
+        return $this->setParameter('md', $value);
+    }
+
+    public function getCardBin()
+    {
+        return $this->getParameter('cardBin');
+    }
+
+    public function setCardBin($value)
+    {
+        return $this->setParameter('cardBin', $value);
+    }
 }

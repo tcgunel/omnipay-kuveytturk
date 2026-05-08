@@ -5,5 +5,11 @@
   "password": "Api123",
   "installment": 0,
   "testMode": true,
-  "transactionId": "KT-ORDER-001"
+  "transactionId": "KT-ORDER-001",
+  "orderId": 22654838,
+  "md": "67YtBfBRTZ0XBKnAHi8c/A==",
+  "amount": 12.34,
+  "currency": "TRY",
+  "returnUrl": "https://example.com/success",
+  "cancelUrl": "https://example.com/failure"
 }

@@ -17,11 +17,14 @@ class PurchaseTest extends TestCase
      * @throws InvalidCreditCardException
      * @throws \JsonException
      */
-    public function test_3d_purchase_request()
+    public function test_3d_purchase_request_builds_json_body()
     {
-        $options = file_get_contents(__DIR__ . '/../Mock/PurchaseRequest3D.json');
-
-        $options = json_decode($options, true, 512, JSON_THROW_ON_ERROR);
+        $options = json_decode(
+            file_get_contents(__DIR__ . '/../Mock/PurchaseRequest3D.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
 
         $request = new PurchaseRequest($this->getHttpClient(), $this->getHttpRequest());
 
@@ -31,39 +34,27 @@ class PurchaseTest extends TestCase
 
         $this->assertIsArray($data);
 
-        // Verify API version
-        $this->assertEquals('TDV2.0.0', $data['APIVersion']);
+        $this->assertSame(1, $data['paymentType']);
+        $this->assertSame(1, $data['language']);
+        $this->assertSame('KT-ORDER-001', $data['merchantOrderId']);
+        $this->assertSame('https://example.com/success', $data['successUrl']);
+        $this->assertSame('https://example.com/failure', $data['failUrl']);
+        $this->assertSame(496, $data['merchantId']);
+        $this->assertSame(400235, $data['customerId']);
+        $this->assertSame('apiuser', $data['username']);
+        $this->assertSame('1234', $data['amount']);
+        $this->assertSame('949', $data['currency']);
+        $this->assertSame(0, $data['installmentCount']);
 
-        // Verify card info
-        $this->assertEquals('4111111111111111', $data['CardNumber']);
-        $this->assertEquals('99', $data['CardExpireDateYear']);
-        $this->assertEquals('12', $data['CardExpireDateMonth']);
-        $this->assertEquals('000', $data['CardCVV2']);
-        $this->assertEquals('Example User', $data['CardHolderName']);
+        $this->assertSame('4111111111111111', $data['card']['cardNumber']);
+        $this->assertSame('Example User', $data['card']['cardHolderName']);
+        $this->assertSame('12', $data['card']['expireMonth']);
+        $this->assertSame('99', $data['card']['expireYear']);
+        $this->assertSame('000', $data['card']['securityCode']);
 
-        // Verify transaction info
-        $this->assertEquals('0', $data['BatchID']);
-        $this->assertEquals('Sale', $data['TransactionType']);
-        $this->assertEquals('0', $data['InstallmentCount']);
-        $this->assertEquals('1234', $data['Amount']);
-        $this->assertEquals('1234', $data['DisplayAmount']);
-        $this->assertEquals('0949', $data['CurrencyCode']);
-        $this->assertEquals('KT-ORDER-001', $data['MerchantOrderId']);
-        $this->assertEquals('3', $data['TransactionSecurity']);
+        $this->assertArrayHasKey('customer', $data);
+        $this->assertArrayHasKey('ipAddress', $data['customer']);
 
-        // Verify 3D URLs
-        $this->assertEquals('https://example.com/success', $data['OkUrl']);
-        $this->assertEquals('https://example.com/failure', $data['FailUrl']);
-
-        // Verify merchant info
-        $this->assertEquals('apiuser', $data['UserName']);
-        $this->assertEquals('496', $data['MerchantId']);
-        $this->assertEquals('400235', $data['CustomerId']);
-
-        // Verify hash is present and is a base64 string
-        $this->assertNotEmpty($data['HashData']);
-
-        // Verify hash calculation: SHA1Base64(MerchantId + MerchantOrderId + Amount + OkUrl + FailUrl + UserName + SHA1Base64(Password))
         $expectedHash = Helper::hash3D(
             '496',
             'KT-ORDER-001',
@@ -73,7 +64,8 @@ class PurchaseTest extends TestCase
             'apiuser',
             'Api123',
         );
-        $this->assertEquals($expectedHash, $data['HashData']);
+
+        $this->assertSame($expectedHash, $data['hashData']);
     }
 
     /**
@@ -81,11 +73,14 @@ class PurchaseTest extends TestCase
      * @throws InvalidCreditCardException
      * @throws \JsonException
      */
-    public function test_non3d_purchase_request()
+    public function test_non3d_purchase_request_builds_xml_body()
     {
-        $options = file_get_contents(__DIR__ . '/../Mock/PurchaseRequestNon3D.json');
-
-        $options = json_decode($options, true, 512, JSON_THROW_ON_ERROR);
+        $options = json_decode(
+            file_get_contents(__DIR__ . '/../Mock/PurchaseRequestNon3D.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
 
         $request = new PurchaseRequest($this->getHttpClient(), $this->getHttpRequest());
 
@@ -94,30 +89,24 @@ class PurchaseTest extends TestCase
         $data = $request->getData();
 
         $this->assertIsArray($data);
-
-        // Verify transaction security is 1 for non-3D
-        $this->assertEquals('1', $data['TransactionSecurity']);
-
-        // Verify no OkUrl/FailUrl for non-3D
+        $this->assertSame('1', $data['TransactionSecurity']);
         $this->assertArrayNotHasKey('OkUrl', $data);
         $this->assertArrayNotHasKey('FailUrl', $data);
+        $this->assertSame('949', $data['CurrencyCode']);
 
-        // Verify hash is non-3D: SHA1Base64(MerchantId + MerchantOrderId + Amount + UserName + SHA1Base64(Password))
-        $expectedHash = Helper::hashNon3D(
-            '496',
-            'KT-ORDER-002',
-            '1234',
-            'apiuser',
-            'Api123',
-        );
-        $this->assertEquals($expectedHash, $data['HashData']);
+        $expectedHash = Helper::hashNon3D('496', 'KT-ORDER-002', '1234', 'apiuser', 'Api123');
+
+        $this->assertSame($expectedHash, $data['HashData']);
     }
 
     public function test_purchase_request_validation_error()
     {
-        $options = file_get_contents(__DIR__ . '/../Mock/PurchaseRequest-ValidationError.json');
-
-        $options = json_decode($options, true, 512, JSON_THROW_ON_ERROR);
+        $options = json_decode(
+            file_get_contents(__DIR__ . '/../Mock/PurchaseRequest-ValidationError.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
 
         $request = new PurchaseRequest($this->getHttpClient(), $this->getHttpRequest());
 
@@ -128,94 +117,114 @@ class PurchaseTest extends TestCase
         $request->getData();
     }
 
-    /**
-     * @throws InvalidRequestException
-     * @throws InvalidCreditCardException
-     * @throws \JsonException
-     */
-    public function test_3d_purchase_response_is_redirect()
+    public function test_3d_purchase_sends_json_to_test_endpoint_and_returns_html_redirect()
     {
-        $options = file_get_contents(__DIR__ . '/../Mock/PurchaseRequest3D.json');
-
-        $options = json_decode($options, true, 512, JSON_THROW_ON_ERROR);
-
-        $request = new PurchaseRequest($this->getHttpClient(), $this->getHttpRequest());
-
-        /** @var PurchaseResponse $response */
-        $response = $request->initialize($options)->send();
-
-        $this->assertFalse($response->isSuccessful());
-
-        $this->assertTrue($response->isRedirect());
-
-        $this->assertEquals('POST', $response->getRedirectMethod());
-
-        $this->assertEquals(
-            'https://boatest.kuveytturk.com.tr/boa.virtualpos.services/Home/ThreeDModelPayGate',
-            $response->getRedirectUrl()
+        $options = json_decode(
+            file_get_contents(__DIR__ . '/../Mock/PurchaseRequest3D.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
         );
 
-        $redirectData = $response->getRedirectData();
+        $this->setMockHttpResponse('PurchaseResponse3DHtml.txt');
 
-        $this->assertIsArray($redirectData);
+        /** @var PurchaseResponse $response */
+        $response = $this->gateway->purchase($options)->send();
 
-        $this->assertEquals($request->getData(), $redirectData);
+        $this->assertInstanceOf(PurchaseResponse::class, $response);
+        $this->assertFalse($response->isSuccessful());
+        $this->assertTrue($response->isRedirect());
+        $this->assertNotNull($response->getRawHtml());
+        $this->assertStringContainsString('document.forms[0].submit()', $response->getRedirectResponse()->getContent());
+
+        $requests = $this->getMockedRequests();
+        $this->assertCount(1, $requests);
+
+        $httpRequest = $requests[0];
+        $this->assertSame('POST', $httpRequest->getMethod());
+        $this->assertStringContainsString(
+            'boatest.kuveytturk.com.tr/boa.virtualpos.services/KTPay/Payment',
+            (string) $httpRequest->getUri(),
+        );
+        $this->assertStringContainsString('application/json', $httpRequest->getHeaderLine('Content-Type'));
+
+        $body = json_decode((string) $httpRequest->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame(496, $body['merchantId']);
+        $this->assertSame('KT-ORDER-001', $body['merchantOrderId']);
     }
 
-    /**
-     * @throws InvalidRequestException
-     * @throws InvalidCreditCardException
-     * @throws \JsonException
-     */
-    public function test_3d_purchase_response_prod_endpoint()
+    public function test_3d_purchase_handles_json_error_response()
     {
-        $options = file_get_contents(__DIR__ . '/../Mock/PurchaseRequest3D.json');
+        $options = json_decode(
+            file_get_contents(__DIR__ . '/../Mock/PurchaseRequest3D.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
 
-        $options = json_decode($options, true, 512, JSON_THROW_ON_ERROR);
+        $this->setMockHttpResponse('PurchaseResponse3DError.txt');
+
+        /** @var PurchaseResponse $response */
+        $response = $this->gateway->purchase($options)->send();
+
+        $this->assertFalse($response->isSuccessful());
+        $this->assertFalse($response->isRedirect());
+        $this->assertSame('HashError', $response->getCode());
+        $this->assertSame('Guvenlik dogrulamasi basarisiz', $response->getMessage());
+    }
+
+    public function test_3d_purchase_uses_prod_endpoint_when_test_mode_is_false()
+    {
+        $options = json_decode(
+            file_get_contents(__DIR__ . '/../Mock/PurchaseRequest3D.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
 
         $options['testMode'] = false;
 
-        $request = new PurchaseRequest($this->getHttpClient(), $this->getHttpRequest());
+        $this->setMockHttpResponse('PurchaseResponse3DHtml.txt');
 
-        /** @var PurchaseResponse $response */
-        $response = $request->initialize($options)->send();
+        $this->gateway->purchase($options)->send();
 
-        $this->assertEquals(
-            'https://sanalpos.kuveytturk.com.tr/ServiceGateWay/Home/ThreeDModelPayGate',
-            $response->getRedirectUrl()
+        $requests = $this->getMockedRequests();
+        $httpRequest = $requests[0];
+
+        $this->assertStringContainsString(
+            'sanalpos.kuveytturk.com.tr/ServiceGateWay/KTPay/Payment',
+            (string) $httpRequest->getUri(),
         );
     }
 
-    public function test_non3d_purchase_sends_http_request_success()
+    public function test_non3d_purchase_sends_xml_and_parses_success()
     {
-        $options = file_get_contents(__DIR__ . '/../Mock/PurchaseRequestNon3D.json');
-
-        $options = json_decode($options, true, 512, JSON_THROW_ON_ERROR);
+        $options = json_decode(
+            file_get_contents(__DIR__ . '/../Mock/PurchaseRequestNon3D.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
 
         $this->setMockHttpResponse('PurchaseResponseNon3DSuccess.txt');
 
         $response = $this->gateway->purchase($options)->send();
 
         $this->assertTrue($response->isSuccessful());
-
         $this->assertFalse($response->isRedirect());
+        $this->assertSame('00', $response->getCode());
+        $this->assertSame('Onaylandi', $response->getMessage());
 
-        $this->assertEquals('00', $response->getCode());
-
-        $this->assertEquals('Onaylandi', $response->getMessage());
-
-        // Verify the HTTP request was sent
         $requests = $this->getMockedRequests();
         $this->assertCount(1, $requests);
 
         $httpRequest = $requests[0];
-        $this->assertEquals('POST', $httpRequest->getMethod());
+        $this->assertSame('POST', $httpRequest->getMethod());
         $this->assertStringContainsString(
             'boatest.kuveytturk.com.tr/boa.virtualpos.services/Home/Non3DPayGate',
-            (string) $httpRequest->getUri()
+            (string) $httpRequest->getUri(),
         );
 
-        // Verify the body is XML
         $body = (string) $httpRequest->getBody();
         $this->assertStringContainsString('KuveytTurkVPosMessage', $body);
         $this->assertStringContainsString('<MerchantId>496</MerchantId>', $body);
@@ -223,30 +232,33 @@ class PurchaseTest extends TestCase
         $this->assertStringContainsString('<TransactionSecurity>1</TransactionSecurity>', $body);
     }
 
-    public function test_non3d_purchase_sends_http_request_error()
+    public function test_non3d_purchase_parses_error_response()
     {
-        $options = file_get_contents(__DIR__ . '/../Mock/PurchaseRequestNon3D.json');
-
-        $options = json_decode($options, true, 512, JSON_THROW_ON_ERROR);
+        $options = json_decode(
+            file_get_contents(__DIR__ . '/../Mock/PurchaseRequestNon3D.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
 
         $this->setMockHttpResponse('PurchaseResponseNon3DError.txt');
 
         $response = $this->gateway->purchase($options)->send();
 
         $this->assertFalse($response->isSuccessful());
-
         $this->assertFalse($response->isRedirect());
-
-        $this->assertEquals('51', $response->getCode());
-
-        $this->assertEquals('Yetersiz bakiye', $response->getMessage());
+        $this->assertSame('51', $response->getCode());
+        $this->assertSame('Yetersiz bakiye', $response->getMessage());
     }
 
-    public function test_non3d_purchase_prod_endpoint()
+    public function test_non3d_purchase_uses_prod_endpoint()
     {
-        $options = file_get_contents(__DIR__ . '/../Mock/PurchaseRequestNon3D.json');
-
-        $options = json_decode($options, true, 512, JSON_THROW_ON_ERROR);
+        $options = json_decode(
+            file_get_contents(__DIR__ . '/../Mock/PurchaseRequestNon3D.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
 
         $options['testMode'] = false;
 
@@ -259,11 +271,11 @@ class PurchaseTest extends TestCase
 
         $this->assertStringContainsString(
             'sanalpos.kuveytturk.com.tr/ServiceGateWay/Home/Non3DPayGate',
-            (string) $httpRequest->getUri()
+            (string) $httpRequest->getUri(),
         );
     }
 
-    public function test_purchase_gateway_method()
+    public function test_purchase_gateway_method_returns_purchase_request_instance()
     {
         $request = $this->gateway->purchase([
             'merchantId' => '496',
@@ -275,15 +287,13 @@ class PurchaseTest extends TestCase
         $this->assertInstanceOf(PurchaseRequest::class, $request);
     }
 
-    public function test_currency_codes()
+    public function test_currency_codes_are_three_digit()
     {
-        $this->assertEquals('0949', CurrencyCode::fromAlpha('TRY'));
-        $this->assertEquals('0840', CurrencyCode::fromAlpha('USD'));
-        $this->assertEquals('0978', CurrencyCode::fromAlpha('EUR'));
-        $this->assertEquals('0826', CurrencyCode::fromAlpha('GBP'));
-
-        // Unknown currency defaults to TRY
-        $this->assertEquals('0949', CurrencyCode::fromAlpha('UNKNOWN'));
+        $this->assertSame('949', CurrencyCode::fromAlpha('TRY'));
+        $this->assertSame('840', CurrencyCode::fromAlpha('USD'));
+        $this->assertSame('978', CurrencyCode::fromAlpha('EUR'));
+        $this->assertSame('826', CurrencyCode::fromAlpha('GBP'));
+        $this->assertSame('949', CurrencyCode::fromAlpha('UNKNOWN'));
     }
 
     /**
@@ -291,11 +301,14 @@ class PurchaseTest extends TestCase
      * @throws InvalidCreditCardException
      * @throws \JsonException
      */
-    public function test_purchase_with_installment()
+    public function test_purchase_with_installment_passes_through()
     {
-        $options = file_get_contents(__DIR__ . '/../Mock/PurchaseRequest3D.json');
-
-        $options = json_decode($options, true, 512, JSON_THROW_ON_ERROR);
+        $options = json_decode(
+            file_get_contents(__DIR__ . '/../Mock/PurchaseRequest3D.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
 
         $options['installment'] = 3;
 
@@ -305,7 +318,7 @@ class PurchaseTest extends TestCase
 
         $data = $request->getData();
 
-        $this->assertEquals('3', $data['InstallmentCount']);
+        $this->assertSame(3, $data['installmentCount']);
     }
 
     /**
@@ -315,9 +328,12 @@ class PurchaseTest extends TestCase
      */
     public function test_purchase_with_usd_currency()
     {
-        $options = file_get_contents(__DIR__ . '/../Mock/PurchaseRequest3D.json');
-
-        $options = json_decode($options, true, 512, JSON_THROW_ON_ERROR);
+        $options = json_decode(
+            file_get_contents(__DIR__ . '/../Mock/PurchaseRequest3D.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
 
         $options['currency'] = 'USD';
 
@@ -327,6 +343,6 @@ class PurchaseTest extends TestCase
 
         $data = $request->getData();
 
-        $this->assertEquals('0840', $data['CurrencyCode']);
+        $this->assertSame('840', $data['currency']);
     }
 }

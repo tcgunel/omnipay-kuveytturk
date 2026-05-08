@@ -1,0 +1,5 @@
+HTTP/1.1 200 OK
+Server: Microsoft-IIS/10.0
+Content-Type: text/html; charset=UTF-8
+
+<!DOCTYPE html><html><body onload="document.forms[0].submit();"><form action="https://3dsecure.kuveytturk.com.tr/3DSecure" method="post"><input type="hidden" name="MD" value="67YtBfBRTZ0XBKnAHi8c/A=="/><input type="hidden" name="PaReq" value="ABCDEFGHI"/><input type="hidden" name="TermUrl" value="https://example.com/success"/></form></body></html>
