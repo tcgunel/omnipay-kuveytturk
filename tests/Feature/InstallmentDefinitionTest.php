@@ -27,7 +27,7 @@ class InstallmentDefinitionTest extends TestCase
     {
         $request = new InstallmentDefinitionRequest($this->getHttpClient(), $this->getHttpRequest());
 
-        $request->initialize(['merchantId' => '']);
+        $request->initialize(['testMode' => true]);
 
         $this->expectException(InvalidRequestException::class);
 

@@ -61,8 +61,8 @@ class CompletePurchaseRequest extends AbstractRequest
             'amount' => $amount,
             'orderId' => (string) $this->getOrderId(),
             'merchantOrderId' => $merchantOrderId,
-            'successUrl' => (string) ($this->getReturnUrl() ?? ''),
-            'failUrl' => (string) ($this->getCancelUrl() ?? ''),
+            'successUrl' => (string) $this->getReturnUrl(),
+            'failUrl' => (string) $this->getCancelUrl(),
             'md' => (string) $this->getMd(),
         ];
     }

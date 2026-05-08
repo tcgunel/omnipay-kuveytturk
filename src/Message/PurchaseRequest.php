@@ -86,7 +86,7 @@ class PurchaseRequest extends AbstractRequest
             $customer['email'] = $email;
         }
 
-        $customer['ipAddress'] = $this->getClientIp() ?? '127.0.0.1';
+        $customer['ipAddress'] = (string) $this->getClientIp();
 
         return [
             'paymentType' => 1,

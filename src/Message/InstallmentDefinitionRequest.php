@@ -25,10 +25,14 @@ class InstallmentDefinitionRequest extends AbstractRequest
      */
     public function getData()
     {
-        $this->validate('merchantId');
+        $merchantId = $this->getMerchantId();
+
+        if (empty($merchantId)) {
+            throw new InvalidRequestException('The merchantId parameter is required');
+        }
 
         return [
-            'merchantId' => (int) $this->getMerchantId(),
+            'merchantId' => (int) $merchantId,
         ];
     }
 

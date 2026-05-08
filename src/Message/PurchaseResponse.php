@@ -72,7 +72,9 @@ class PurchaseResponse extends AbstractResponse implements RedirectResponseInter
 
     public function getRedirectUrl()
     {
-        return null;
+        // The bank returned the 3DS form HTML directly (see getRedirectResponse).
+        // There is no separate URL for the framework to redirect to.
+        return '';
     }
 
     public function getRedirectMethod(): string
