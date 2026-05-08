@@ -11,7 +11,7 @@
 [Omnipay](https://github.com/thephpleague/omnipay) is a framework agnostic, multi-gateway payment
 processing library for PHP. This package implements KuveytTurk (Kuveyt Türk Bankası) support for Omnipay.
 
-> **v3.0 — Breaking change.** v3 migrates to KuveytTurk's new `KTPay/*` JSON endpoints with the HMAC-SHA512 hash. Currency codes are now 3-digit. The 3D callback now reads `Result_MD` / `Result_OrderId` / `Result_MerchantOrderId` instead of `AuthenticationResponse`. See [UPGRADING.md](#upgrading-from-v2x).
+> **v3.0 — Breaking change.** v3 migrates to KuveytTurk's new `KTPay/*` JSON endpoints with the HMAC-SHA512 hash. The 3D callback now reads `Result_MD` / `Result_OrderId` / `Result_MerchantOrderId` instead of `AuthenticationResponse`. See [UPGRADING.md](#upgrading-from-v2x).
 
 ## Installation
 
@@ -167,14 +167,14 @@ if ($response->isSuccessful()) {
 | `isOnusCard()`            | Check whether a card is KuveytTurk-issued (Onus)             |
 | `installmentDefinition()` | Fetch the merchant's allowed installment counts              |
 
-## Currency Codes (3-digit, ISO 4217)
+## Currency Codes (4-digit, ISO 4217 numeric, zero-padded)
 
 | Currency | Code |
 |----------|------|
-| TRY      | 949  |
-| USD      | 840  |
-| EUR      | 978  |
-| GBP      | 826  |
+| TRY      | 0949 |
+| USD      | 0840 |
+| EUR      | 0978 |
+| GBP      | 0826 |
 
 ## Amount Format
 
@@ -219,7 +219,7 @@ Where `hashValue` is the field concatenation:
 | 3D init request format              | HTML form auto-submit (browser)                   | JSON, server-side; bank returns HTML to relay              |
 | 3D callback payload                 | `AuthenticationResponse` (URL-encoded XML)        | `Result_MD`, `Result_OrderId`, `Result_MerchantOrderId`    |
 | Hash algorithm                      | SHA1                                              | HMAC-SHA512 (key = SHA1Base64(password))                   |
-| Currency code                       | `0949` (4-digit)                                  | `949` (3-digit)                                            |
+| Currency code                       | `0949` (4-digit)                                  | `0949` (4-digit, unchanged)                                |
 | `completePurchase()` parameters     | `authenticationResponse`, `md`                    | `transactionId`, `orderId`, `md`, `amount`, `currency`     |
 
 Non-3D `/Home/Non3DPayGate` is still XML-based and still works, but uses the same HMAC-SHA512 hash and 3-digit currency codes.

@@ -4,6 +4,12 @@ All notable changes to `tcgunel/omnipay-kuveytturk` are documented here.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [3.0.1] — 2026-05-08
+
+### Fixed
+
+- Currency codes reverted to 4-digit ISO 4217 numeric, zero-padded (`0949`/`0840`/`0978`/`0826`). The official WordPress plugin sends 4-digit codes via its `KTPayConfig::get_currency_code()` helper. Sending 3-digit codes caused the bank to reject 3D Secure requests with `RequestValidationError` / `CurrencyValidationError`.
+
 ## [3.0.0] — 2026-05-08
 
 ### Breaking changes
@@ -12,7 +18,6 @@ This project follows [Semantic Versioning](https://semver.org/).
 - 3D provision endpoint changed from `/Home/ThreeDModelProvisionGate` (XML) to `/KTPay/Provision` (JSON).
 - 3D callback parameters: `CompletePurchaseRequest` now reads `transactionId` (= `Result_MerchantOrderId`), `orderId` (= `Result_OrderId`), and `md` (= `Result_MD`) instead of `authenticationResponse`.
 - Hash algorithm changed from SHA1 to HMAC-SHA512 keyed by `Base64(SHA1(password))` for all KTPay endpoints (and the Non-3D endpoint, to match the official WordPress plugin).
-- Currency codes are now 3-digit ISO 4217 (e.g. `949` for TRY) instead of 4-digit.
 - `Helpers\Helper::hash3D` / `hashNon3D` signatures unchanged but their internal algorithm is now HMAC-SHA512.
 
 ### Added

@@ -43,7 +43,7 @@ class PurchaseTest extends TestCase
         $this->assertSame(400235, $data['customerId']);
         $this->assertSame('apiuser', $data['username']);
         $this->assertSame('1234', $data['amount']);
-        $this->assertSame('949', $data['currency']);
+        $this->assertSame('0949', $data['currency']);
         $this->assertSame(0, $data['installmentCount']);
 
         $this->assertSame('4111111111111111', $data['card']['cardNumber']);
@@ -92,7 +92,7 @@ class PurchaseTest extends TestCase
         $this->assertSame('1', $data['TransactionSecurity']);
         $this->assertArrayNotHasKey('OkUrl', $data);
         $this->assertArrayNotHasKey('FailUrl', $data);
-        $this->assertSame('949', $data['CurrencyCode']);
+        $this->assertSame('0949', $data['CurrencyCode']);
 
         $expectedHash = Helper::hashNon3D('496', 'KT-ORDER-002', '1234', 'apiuser', 'Api123');
 
@@ -287,13 +287,13 @@ class PurchaseTest extends TestCase
         $this->assertInstanceOf(PurchaseRequest::class, $request);
     }
 
-    public function test_currency_codes_are_three_digit()
+    public function test_currency_codes_are_four_digit_iso_4217_padded()
     {
-        $this->assertSame('949', CurrencyCode::fromAlpha('TRY'));
-        $this->assertSame('840', CurrencyCode::fromAlpha('USD'));
-        $this->assertSame('978', CurrencyCode::fromAlpha('EUR'));
-        $this->assertSame('826', CurrencyCode::fromAlpha('GBP'));
-        $this->assertSame('949', CurrencyCode::fromAlpha('UNKNOWN'));
+        $this->assertSame('0949', CurrencyCode::fromAlpha('TRY'));
+        $this->assertSame('0840', CurrencyCode::fromAlpha('USD'));
+        $this->assertSame('0978', CurrencyCode::fromAlpha('EUR'));
+        $this->assertSame('0826', CurrencyCode::fromAlpha('GBP'));
+        $this->assertSame('0949', CurrencyCode::fromAlpha('UNKNOWN'));
     }
 
     /**
@@ -343,6 +343,6 @@ class PurchaseTest extends TestCase
 
         $data = $request->getData();
 
-        $this->assertSame('840', $data['currency']);
+        $this->assertSame('0840', $data['currency']);
     }
 }
