@@ -1,0 +1,5 @@
+HTTP/1.1 200 OK
+Server: Microsoft-IIS/10.0
+Content-Type: application/json; charset=UTF-8
+
+{"Result":{"Transactions":[{"MerchantId":496,"PosTerminalId":"VP008759","OrderId":203418187,"MerchantOrderId":"KT-ORDER-001","CardHolderName":"JOHN DOE","CardNumber":"51889655****0843","CardType":"MasterCard","TransactionTime":"2024-06-06T14:52:57.407","IsCancellable":0,"IsRefundable":1,"IsPartialRefundable":1,"OrderStatus":"Satış (1)","LastOrderStatus":"Satış (1)","OrderType":"Peşin (1)","TransactionStatus":"Basarılı (1)","FirstAmount":100,"DrawbackAmount":0,"CancelAmount":0,"ClosedAmount":0,"FEC":"TRY (0949)","InstallmentCount":0,"TransactionSecurity":"3d İşlem (3)","ResponseCode":"00","ResponseExplain":"İşlem gerçekleştirildi.","BatchId":548,"EndOfDayStatus":"Kapalı (2)","EndOfDayTime":null,"ProvisionNumber":"136371"}]},"Success":true,"ResponseCode":"Successfull","ResponseMessage":"Your transaction has been completed successfully.","BusinessKey":202406049999000000016078180,"TransactionTime":1717685800}

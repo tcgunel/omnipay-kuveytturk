@@ -158,6 +158,66 @@ if ($response->isSuccessful()) {
 }
 ```
 
+### Cancel / Refund / Partial Refund (SaleReversal)
+
+**İptal (cancel)** is a same-day cancellation of the whole sale. **İade (refund)** refunds from the following day on: omit `amount` for a full refund, pass it for a partial refund (Kısmi İade). Both are the same `/KTPay/SaleReversal` endpoint, addressed by the **bank-side** `orderId` (the `Result_OrderId` of the 3D callback) plus your `merchantOrderId` (passed as `transactionId`):
+
+```php
+$response = $gateway->cancel([
+    'merchantId'    => 'YOUR_MERCHANT_ID',
+    'customerId'    => 'YOUR_CUSTOMER_ID',
+    'userName'      => 'YOUR_USERNAME',
+    'password'      => 'YOUR_PASSWORD',
+    'orderId'       => 203418448,    // bank-side order id (Result_OrderId)
+    'transactionId' => 'ORDER-001',  // your merchant order id
+])->send();
+
+// Full refund (İade) — omit the amount.
+$response = $gateway->refund([
+    'merchantId'    => 'YOUR_MERCHANT_ID',
+    'customerId'    => 'YOUR_CUSTOMER_ID',
+    'userName'      => 'YOUR_USERNAME',
+    'password'      => 'YOUR_PASSWORD',
+    'orderId'       => 203418448,
+    'transactionId' => 'ORDER-001',
+])->send();
+
+// Partial refund (Kısmi İade) — pass the amount in standard decimals.
+$response = $gateway->refund([
+    'merchantId'    => 'YOUR_MERCHANT_ID',
+    'customerId'    => 'YOUR_CUSTOMER_ID',
+    'userName'      => 'YOUR_USERNAME',
+    'password'      => 'YOUR_PASSWORD',
+    'orderId'       => 203418448,
+    'transactionId' => 'ORDER-001',
+    'amount'        => '12.34',
+])->send();
+
+if ($response->isSuccessful()) {
+    echo $response->getTransactionReference(); // bank-side order id
+} else {
+    echo $response->getMessage();
+}
+```
+
+### Transaction Lookup (GetTransactions)
+
+Lists transactions for a merchant order id — useful to recover the bank-side `orderId` when it was not stored at payment time:
+
+```php
+$response = $gateway->fetchTransactions([
+    'merchantId'    => 'YOUR_MERCHANT_ID',
+    'customerId'    => 'YOUR_CUSTOMER_ID',
+    'userName'      => 'YOUR_USERNAME',
+    'password'      => 'YOUR_PASSWORD',
+    'transactionId' => 'ORDER-001',
+])->send();
+
+foreach ($response->getTransactions() as $transaction) {
+    echo $transaction->OrderId; // bank-side order id
+}
+```
+
 ## Supported Methods
 
 | Method                    | Description                                                  |
@@ -166,6 +226,9 @@ if ($response->isSuccessful()) {
 | `completePurchase()`      | Complete 3D payment after bank callback (provision)          |
 | `isOnusCard()`            | Check whether a card is KuveytTurk-issued (Onus)             |
 | `installmentDefinition()` | Fetch the merchant's allowed installment counts              |
+| `cancel()`                | İptal — same-day cancellation (`/KTPay/SaleReversal`, type 3) |
+| `refund()`                | İade / Kısmi İade — full refund (omit `amount`) or partial refund |
+| `fetchTransactions()`     | List transactions (`/KTPay/GetTransactions`)                 |
 
 ## Currency Codes (4-digit, ISO 4217 numeric, zero-padded)
 
@@ -179,6 +242,8 @@ if ($response->isSuccessful()) {
 ## Amount Format
 
 Amounts are passed as standard decimal values (e.g., `12.34`). The package internally converts them to the integer kuruş format required by KuveytTurk (e.g., `1234`).
+
+`SaleReversal` operations always carry an amount: the official SDKs send `"0"` for cancellations and full refunds and the kuruş amount for partial refunds — this package does the same (`cancel()` and an `amount`-less `refund()` send `"0"`).
 
 ## Hash Algorithm
 
@@ -194,6 +259,8 @@ Where `hashValue` is the field concatenation:
 
 - **Non-3D / Provision:** `MerchantId + MerchantOrderId + Amount + UserName`
 - **3D:** `MerchantId + MerchantOrderId + Amount + OkUrl + FailUrl + UserName`
+- **SaleReversal:** `MerchantId + MerchantOrderId + Amount + UserName` (Amount is `0` for cancellations and full refunds, the kuruş amount for partial refunds; the bank-side `OrderId` is **not** part of the hash)
+- **GetTransactions:** `MerchantId + MerchantOrderId + UserName`
 
 ## Endpoints
 
@@ -204,11 +271,15 @@ Where `hashValue` is the field concatenation:
 | Test        | Non-3D                     | https://boatest.kuveytturk.com.tr/boa.virtualpos.services/Home/Non3DPayGate                        |
 | Test        | Onus Card Check            | https://boatest.kuveytturk.com.tr/boa.virtualpos.services/KTPay/IsOnusCard                         |
 | Test        | Installment Definition     | https://boatest.kuveytturk.com.tr/boa.virtualpos.services/KTPay/GetMerchantInstallmentDefinition   |
+| Test        | Cancel / Refund            | https://boatest.kuveytturk.com.tr/boa.virtualpos.services/KTPay/SaleReversal                       |
+| Test        | Transaction Lookup         | https://boatest.kuveytturk.com.tr/boa.virtualpos.services/KTPay/GetTransactions                     |
 | Production  | 3D Payment                 | https://sanalpos.kuveytturk.com.tr/ServiceGateWay/KTPay/Payment                                    |
 | Production  | 3D Provision               | https://sanalpos.kuveytturk.com.tr/ServiceGateWay/KTPay/Provision                                  |
 | Production  | Non-3D                     | https://sanalpos.kuveytturk.com.tr/ServiceGateWay/Home/Non3DPayGate                                |
 | Production  | Onus Card Check            | https://sanalpos.kuveytturk.com.tr/ServiceGateWay/KTPay/IsOnusCard                                 |
 | Production  | Installment Definition     | https://sanalpos.kuveytturk.com.tr/ServiceGateWay/KTPay/GetMerchantInstallmentDefinition           |
+| Production  | Cancel / Refund            | https://sanalpos.kuveytturk.com.tr/ServiceGateWay/KTPay/SaleReversal                                |
+| Production  | Transaction Lookup         | https://sanalpos.kuveytturk.com.tr/ServiceGateWay/KTPay/GetTransactions                             |
 
 ## Upgrading from v2.x
 
@@ -223,10 +294,6 @@ Where `hashValue` is the field concatenation:
 | `completePurchase()` parameters     | `authenticationResponse`, `md`                    | `transactionId`, `orderId`, `md`, `amount`, `currency`     |
 
 Non-3D `/Home/Non3DPayGate` is still XML-based and still works, but uses the same HMAC-SHA512 hash and 3-digit currency codes.
-
-## Not Implemented
-
-Cancel and Refund operations are not implemented.
 
 ## Testing
 

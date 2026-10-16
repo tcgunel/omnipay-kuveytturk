@@ -2,10 +2,13 @@
 
 namespace Omnipay\KuveytTurk\Tests\Feature;
 
+use Omnipay\KuveytTurk\Message\CancelRequest;
 use Omnipay\KuveytTurk\Message\CompletePurchaseRequest;
+use Omnipay\KuveytTurk\Message\FetchTransactionsRequest;
 use Omnipay\KuveytTurk\Message\InstallmentDefinitionRequest;
 use Omnipay\KuveytTurk\Message\IsOnusCardRequest;
 use Omnipay\KuveytTurk\Message\PurchaseRequest;
+use Omnipay\KuveytTurk\Message\RefundRequest;
 use Omnipay\KuveytTurk\Tests\TestCase;
 
 class GatewayTest extends TestCase
@@ -49,6 +52,21 @@ class GatewayTest extends TestCase
     public function test_gateway_installment_definition_returns_correct_request()
     {
         $this->assertInstanceOf(InstallmentDefinitionRequest::class, $this->gateway->installmentDefinition([]));
+    }
+
+    public function test_gateway_cancel_returns_correct_request()
+    {
+        $this->assertInstanceOf(CancelRequest::class, $this->gateway->cancel([]));
+    }
+
+    public function test_gateway_refund_returns_correct_request()
+    {
+        $this->assertInstanceOf(RefundRequest::class, $this->gateway->refund([]));
+    }
+
+    public function test_gateway_fetch_transactions_returns_correct_request()
+    {
+        $this->assertInstanceOf(FetchTransactionsRequest::class, $this->gateway->fetchTransactions([]));
     }
 
     public function test_gateway_getters_setters()

@@ -1,0 +1,5 @@
+HTTP/1.1 200 OK
+Server: Microsoft-IIS/10.0
+Content-Type: application/json; charset=UTF-8
+
+{"Success":false,"ResponseCode":"OrderNotFoundException","ResponseMessage":"İşlem bulunamadı.","OrderId":0,"MerchantOrderId":"KT-ORDER-001","BusinessKey":0}

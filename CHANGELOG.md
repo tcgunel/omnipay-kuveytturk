@@ -4,6 +4,18 @@ All notable changes to `tcgunel/omnipay-kuveytturk` are documented here.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [3.1.0] — 2026-10-16
+
+### Added
+
+- `Gateway::cancel()` — İptal (`POST /KTPay/SaleReversal`, `saleReversalType` 3): same-day cancellation of the whole sale, addressed by the bank-side `OrderId` (the `Result_OrderId` of the 3D callback) plus `transactionId` (your merchant order id). The amount field is sent as `"0"`.
+- `Gateway::refund()` — İade / Kısmi İade (`POST /KTPay/SaleReversal`, types 1/2): omit `amount` for a full refund (`DRAWBACK`, amount `"0"`), pass an amount for a partial refund (`PARTIAL_DRAWBACK`, kuruş amount).
+- `Gateway::fetchTransactions()` — `POST /KTPay/GetTransactions`: list transactions for a merchant order id (optionally filtered by bank `orderId` and a `startDate`/`endDate` range). Useful to recover the bank-side `OrderId` a SaleReversal needs when it was not stored at payment time.
+- `Helpers\Helper::hashSaleReversal()` / `Helpers\Helper::hashFetchTransactions()` — public hash helpers for the new endpoints.
+- `Constants\SaleReversalType` — official type codes (`DRAWBACK` = 1, `PARTIAL_DRAWBACK` = 2, `CANCEL` = 3).
+
+Field shapes, hash inputs and the `"0"`-amount rule mirror the official KuveytTurk SDKs (`ktpay-php`, `ktpay-dotnet`) and the official Postman collection; hashes are pinned in tests to independently computed vectors.
+
 ## [3.0.3] — 2026-05-08
 
 ### Fixed

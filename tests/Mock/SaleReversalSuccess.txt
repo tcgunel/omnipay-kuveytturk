@@ -1,0 +1,5 @@
+HTTP/1.1 200 OK
+Server: Microsoft-IIS/10.0
+Content-Type: application/json; charset=UTF-8
+
+{"Result":{"OrderId":203418187,"MerchantOrderId":"KTPay-PHP-1577368010"},"Success":true,"ResponseCode":"00","ResponseMessage":"OTORİZASYON VERİLDİ","BusinessKey":202406049999000000016077009,"TransactionTime":1717685630}

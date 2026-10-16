@@ -87,6 +87,45 @@ class HelperTest extends TestCase
         $this->assertNotSame($hashNon3D, $hash3D);
     }
 
+    public function test_hash_sale_reversal_concatenates_merchant_order_amount_username()
+    {
+        $hash = Helper::hashSaleReversal('496', 'KT-ORDER-001', '1234', 'apiuser', 'Api123');
+
+        $expected = Helper::hashKTPay('496' . 'KT-ORDER-001' . '1234' . 'apiuser', 'Api123');
+
+        $this->assertSame($expected, $hash);
+
+        // Independently pinned vector (python3 hashlib/hmac) for the cancel /
+        // full-refund shape the official SDKs send: amount "0".
+        $this->assertSame(
+            'Em9ZrQpdBxD/vXSrhJvoikcyEdkCKYqSv6qxrFcet16V1U6gZoiMkUu6s5drZqYjyg6SOyUI0ZHKNogV52ZqIg==',
+            Helper::hashSaleReversal('496', 'KT-ORDER-001', '0', 'apiuser', 'Api123'),
+        );
+    }
+
+    public function test_hash_sale_reversal_differs_by_amount()
+    {
+        $full = Helper::hashSaleReversal('496', 'KT-ORDER-001', '0', 'apiuser', 'Api123');
+        $partial = Helper::hashSaleReversal('496', 'KT-ORDER-001', '1234', 'apiuser', 'Api123');
+
+        $this->assertNotSame($full, $partial);
+    }
+
+    public function test_hash_fetch_transactions_concatenates_merchant_order_username()
+    {
+        $hash = Helper::hashFetchTransactions('496', 'KT-ORDER-001', 'apiuser', 'Api123');
+
+        $expected = Helper::hashKTPay('496' . 'KT-ORDER-001' . 'apiuser', 'Api123');
+
+        $this->assertSame($expected, $hash);
+
+        // Independently pinned vector (python3 hashlib/hmac).
+        $this->assertSame(
+            '65J37OOJ3R/Gq/ipxEdVtEDVEObSWD4EgsBLprhevFelgzxBccfQ/DEnpWlFFiEaCGuCaFMBkaXc8mlnlaDjug==',
+            $hash,
+        );
+    }
+
     public function test_format_amount()
     {
         $this->assertSame('100', Helper::formatAmount(100));

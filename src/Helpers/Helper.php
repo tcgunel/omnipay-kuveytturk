@@ -69,6 +69,46 @@ class Helper
     }
 
     /**
+     * Hash for /KTPay/SaleReversal (İptal / İade / Kısmi İade).
+     *
+     * The official SDKs concatenate
+     * MerchantId + MerchantOrderId + Amount + UserName, where Amount is the
+     * literal string "0" for cancellations and full refunds and the kuruş
+     * amount for partial refunds (ktpay-php SaleReversalRequest::setHashData,
+     * ktpay-dotnet SaleReversalRequest.SetHashData — identical logic).
+     */
+    public static function hashSaleReversal(
+        string $merchantId,
+        string $merchantOrderId,
+        string $amount,
+        string $userName,
+        string $password,
+    ): string {
+        return self::hashKTPay(
+            $merchantId . $merchantOrderId . $amount . $userName,
+            $password,
+        );
+    }
+
+    /**
+     * Hash for /KTPay/GetTransactions (transaction listing).
+     *
+     * MerchantId + MerchantOrderId + UserName — no amount involved
+     * (ktpay-php GetTransactionsRequest::setHashData).
+     */
+    public static function hashFetchTransactions(
+        string $merchantId,
+        string $merchantOrderId,
+        string $userName,
+        string $password,
+    ): string {
+        return self::hashKTPay(
+            $merchantId . $merchantOrderId . $userName,
+            $password,
+        );
+    }
+
+    /**
      * Build XML string from array data for KuveytTurk VPos (used for non-3D Home/Non3DPayGate).
      */
     public static function arrayToXml(array $data, string $rootElement = 'KuveytTurkVPosMessage'): string

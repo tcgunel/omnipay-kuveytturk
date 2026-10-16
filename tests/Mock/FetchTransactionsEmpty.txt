@@ -1,0 +1,5 @@
+HTTP/1.1 200 OK
+Server: Microsoft-IIS/10.0
+Content-Type: application/json; charset=UTF-8
+
+{"Result":{"Transactions":[]},"Success":true,"ResponseCode":"Successfull","ResponseMessage":"Your transaction has been completed successfully.","BusinessKey":202406049999000000016078181,"TransactionTime":1717685801}
