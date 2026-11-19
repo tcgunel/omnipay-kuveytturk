@@ -4,6 +4,12 @@ All notable changes to `tcgunel/omnipay-kuveytturk` are documented here.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [3.1.1] — 2026-11-19
+
+### Added
+
+- The 3D payment request (`POST /KTPay/Payment`) now carries the top-level `cardHolderIp` field, filled from `clientIp`. KuveytTurk makes it mandatory from 18 December 2026; its position matches the official OpenCart/PrestaShop plugins. `customer.ipAddress` is still sent.
+
 ## [3.1.0] — 2026-10-16
 
 ### Added

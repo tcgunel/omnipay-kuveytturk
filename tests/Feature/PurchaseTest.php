@@ -54,6 +54,7 @@ class PurchaseTest extends TestCase
 
         $this->assertArrayHasKey('customer', $data);
         $this->assertArrayHasKey('ipAddress', $data['customer']);
+        $this->assertSame($data['customer']['ipAddress'], $data['cardHolderIp']);
 
         $expectedHash = Helper::hash3D(
             '496',

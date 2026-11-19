@@ -101,6 +101,8 @@ class PurchaseRequest extends AbstractRequest
             'amount' => $amount,
             'currency' => CurrencyCode::fromAlpha($this->getCurrency()),
             'installmentCount' => (int) ($this->getInstallment() ?? 0),
+            // Mandatory from 18 December 2026 (bank notice); placed where the official plugins put it.
+            'cardHolderIp' => (string) $this->getClientIp(),
             'customer' => $customer,
             'card' => [
                 'cardNumber' => $card->getNumber(),
